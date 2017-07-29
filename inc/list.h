@@ -1,11 +1,12 @@
 #ifndef __LIST_H
 #define __LIST_H
 
+#include "common.h"
+
 #ifndef LIST_NODE_DATATYPE 
 #define LIST_NODE_DATATYPE int
 #endif
 
-#include "common.h"
 
 typedef LIST_NODE_DATATYPE datatype;
 
@@ -34,5 +35,6 @@ void list_del(linklist list);
 void list_move(linklist list, linklist head);
 void list_move_tail(linklist list, linklist head);
 
+bool is_empty(linklist list);
 
 #endif

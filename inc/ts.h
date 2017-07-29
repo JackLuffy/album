@@ -4,6 +4,6 @@
 #include "common.h"
 #include <linux/input.h>
 
-void wait4touch(int ts);
+int wait4touch(int ts);
 
 #endif

@@ -4,7 +4,7 @@
 #include "common.h"
 #include <linux/fb.h>
 
-typedef struct lcdinfo
+typedef struct
 {
 	char *fbmem;
 
@@ -22,8 +22,8 @@ typedef struct lcdinfo
 	unsigned long yoffset;
 
 	unsigned long bpp;
-}lcdinfo;
+}lcd_info;
 
-lcdinfo *init_lcd();
+lcd_info *init_lcd();
 
 #endif

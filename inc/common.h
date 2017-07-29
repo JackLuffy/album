@@ -15,7 +15,6 @@
 #include <assert.h>
 #include <string.h>
 #include <strings.h>
-
 #include <dirent.h>
 
 typedef struct filenode
@@ -28,5 +27,16 @@ typedef struct filenode
 
 	char *rgb;
 }filenode;
+
+#define LIST_NODE_DATATYPE filenode
+#include "list.h"
+
+#include "ts.h"
+#include "lcd.h"
+#include "jpeglib.h"
+
+#define CURRENT 0
+#define PREV 1
+#define NEXT 2
 
 #endif

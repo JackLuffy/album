@@ -1,12 +1,12 @@
 #include "lcd.h"
 
-lcdinfo *init_lcd(void)
+lcd_info *init_lcd(void)
 {
-	int lcd = open("/dev/fb0", O_RDONLY);
+	int lcd = open("/dev/fb0", O_RDWR);
 	if(lcd == -1)
 	{
 		perror("open /dev/fb0 failed");
-		return NULL;
+		exit(0);
 	}
 
 	// get info about LCD
@@ -14,39 +14,45 @@ lcdinfo *init_lcd(void)
 	bzero(&vinfo, sizeof(vinfo));
 	ioctl(lcd, FBIOGET_VSCREENINFO, &vinfo);
 
-	lcdinfo *linfo = calloc(1, sizeof(lcdinfo));
-	if(linfo == NULL)
-	{
-		fprintf(stderr, "[] calloc failed: %s\n",
-				__LINE__, strerror(errno));
-		return NULL;
-	}
+	static lcd_info lcdinfo;
 
-	linfo->xres = vinfo.xres;
-	linfo->yres = vinfo.yres;
+	lcdinfo.xres = vinfo.xres;
+	lcdinfo.yres = vinfo.yres;
 
-	linfo->xres_virtual = vinfo.xres_virtual;
-	linfo->yres_virtual = vinfo.yres_virtual;
+	lcdinfo.xres_virtual = vinfo.xres_virtual;
+	lcdinfo.yres_virtual = vinfo.yres_virtual;
 
-	linfo->red_offset   = vinfo.red.offset;
-	linfo->green_offset = vinfo.green.offset;
-	linfo->blue_offset  = vinfo.blue.offset;
+	lcdinfo.red_offset   = vinfo.red.offset;
+	lcdinfo.green_offset = vinfo.green.offset;
+	lcdinfo.blue_offset  = vinfo.blue.offset;
 
-	linfo->xoffset = vinfo.xoffset;
-	linfo->xoffset = vinfo.xoffset;
+	lcdinfo.xoffset = vinfo.xoffset;
+	lcdinfo.yoffset = vinfo.yoffset;
 
-	linfo->bpp = vinfo.bits_per_pixel;
+	lcdinfo.bpp = vinfo.bits_per_pixel;
+
+#ifdef DEBUG
+	printf("xres: %d\n", lcdinfo.xres);
+	printf("yres: %d\n", lcdinfo.yres);
+
+	printf("xres_v: %d\n", lcdinfo.xres_virtual);
+	printf("yres_v: %d\n", lcdinfo.yres_virtual);
+
+	printf("bpp: %d\n", lcdinfo.bpp);
+
+	printf("xoffset: %d\n", lcdinfo.xoffset);
+	printf("yoffset: %d\n", lcdinfo.yoffset);
+#endif
 
 	// allocate a double size buffer of size of LCD
-	linfo->fbmem = mmap(NULL, linfo->xres * linfo->yres*2 * linfo->bpp/8,
+	lcdinfo.fbmem = mmap(NULL, lcdinfo.xres * lcdinfo.yres * lcdinfo.bpp/8,
 			    PROT_READ | PROT_WRITE, MAP_SHARED, lcd, 0);
 
-	if(linfo->fbmem == MAP_FAILED)
+	if(lcdinfo.fbmem == MAP_FAILED)
 	{
 		perror("mmap() failed");
-		free(linfo);
-		return NULL;
+		exit(0);
 	}
 
-	return linfo;
+	return &lcdinfo;
 }

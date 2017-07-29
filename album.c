@@ -1,9 +1,13 @@
 #include "common.h"
 #include "ts.h"
 #include "lcd.h"
+#include "jpg.h"
 
 #define LIST_NODE_DATATYPE filenode
 #include "list.h"
+
+// global linklist 
+linklist g_head = NULL;
 
 char *check_args(int argc, char **argv)
 {
@@ -18,49 +22,73 @@ char *check_args(int argc, char **argv)
 	return argc==2 ? argv[1] : ".";
 }
 
-bool is_jpg(char *filename)
+linklist show_jpg(linklist list, int action, lcd_info *lcdinfo)
 {
-	assert(filename);
+	assert(list);
+	assert(lcdinfo);
 
-	// check the filename contains the specified suffix
-	char *tmp1 = strstr(filename, ".jpg");
-	char *tmp2 = strstr(filename, ".jpeg");
-
-	if(tmp1 == NULL && tmp2 == NULL)
+	switch(action)
 	{
-		return false;	
+	case CURRENT:
+		list = list;
+		break;
+
+	case PREV:
+		if(list->prev == g_head)
+		{
+			fprintf(stderr, "this is the first list.\n");	
+			return list;
+		}
+		list = list->prev;
+		break;
+
+	case NEXT:
+		if(list->next == g_head)
+		{
+			fprintf(stderr, "this is the last list.\n");	
+			return list;
+		}
+		list = list->next;
+		break;
 	}
 
-	if(tmp1 != NULL && strlen(tmp1) > strlen(".jpg") ||
-	   tmp2 != NULL && strlen(tmp2) > strlen(".jpeg") )
+	filenode *jpg = &list->data;
+
+	decompress(jpg);
+	display(jpg, lcdinfo, 0, 0);
+
+	return list;
+}
+
+linklist newnode(char *jpgname)
+{
+	assert(jpgname);
+
+	linklist new = calloc(1, sizeof(listnode));
+	if(new == NULL)
 	{
-		return false;
+		fprintf(stderr, "[%d] calloc() failed: %s\n",
+				 __LINE__, strerror(errno));
+		return NULL;
 	}
 
-	return true;
+	filenode *tmp = &new->data;
+
+	tmp->name  = jpgname;
+	tmp->width = 0;
+	tmp->height= 0;
+	tmp->bpp   = 0;
+	tmp->rgb   = NULL;
+
+	return new;
 }
 
-char *decompress_jpg(char *jpgname)
-{
-	return "";
-}
-
-void display(char *rgb)
-{
-
-}
-
-void show_jpg(char *filename)
-{
-	assert(filename);
-
-	char *rgb = decompress_jpg(filename);
-	display(rgb);
-}
-
-void show_jpg_dir(char *dirname)
+void show_jpg_dir(char *dirname, lcd_info *lcdinfo)
 {
 	assert(dirname);
+
+	// prepare the double-link list
+	g_head = init_list();
 
 	DIR *dp = opendir(dirname);
 	if(dp == NULL)
@@ -88,35 +116,65 @@ void show_jpg_dir(char *dirname)
 		if(!S_ISREG(finfo.st_mode) || !is_jpg(ep->d_name))
 			continue;
 
-		show_jpg(ep->d_name);
+		linklist new = newnode(ep->d_name);
+		list_add(new, g_head);
+	}
 
-		wait4touch(100);
+	// no jpg-file was found
+	if(is_empty(g_head))
+	{
+		fprintf(stderr, "no jpg-file was found, bye-bye!\n");
+		exit(0);
+	}
+
+	// prepare the touch-panel
+	int tp = open("/dev/input/event0", O_RDONLY);
+	if(tp == -1)
+	{
+		perror("open() /dev/input/event0 failed");
+		exit(0);
+	}
+
+	// navigate the album from the first jpg-picture
+	linklist current_jpg = g_head->next;
+	int action = CURRENT;
+	while(1)
+	{
+		current_jpg = show_jpg(current_jpg, action, lcdinfo);
+		action = wait4touch(tp);
 	}
 }
 
+struct stat *get_file_info(char *filename)
+{
+	static struct stat finfo;
+	bzero(&finfo, sizeof(finfo));
+	stat(filename, &finfo);
+
+	return &finfo;
+}
 
 int main(int argc, char **argv)
 {
 	char *file = check_args(argc, argv);
 
-	// get file's infomation
-	struct stat finfo;
-	bzero(&finfo, sizeof(finfo));
-	stat(file, &finfo);
-
 	// prepare LCD
-	lcdinfo *linfo = init_lcd();
+	lcd_info *lcdinfo = init_lcd();
 
-	// prepare the double-link list
-	linklist head = init_list();
+	// get file's infomation
+	struct stat *finfo = get_file_info(file);
 
-	if(S_ISREG(finfo.st_mode) && is_jpg(file))
+	if(S_ISREG(finfo->st_mode) && is_jpg(file))
 	{
-		show_jpg(file);
+		filenode *jpg = malloc(sizeof(filenode));
+		jpg->name = file;
+
+		decompress(jpg);
+		display(jpg, lcdinfo, 0, 0);
 	}
-	else if(S_ISDIR(finfo.st_mode))
+	else if(S_ISDIR(finfo->st_mode))
 	{
-		show_jpg_dir(file);	
+		show_jpg_dir(file, lcdinfo);	
 	}
 	else
 	{

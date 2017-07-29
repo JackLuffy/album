@@ -47,3 +47,10 @@ void list_del(linklist del)
 
 	INIT_LIST_HEAD(del);
 }
+
+bool is_empty(linklist list)
+{
+	assert(list);
+
+	return list->next == list;
+}

@@ -17,6 +17,9 @@ LDFLAGS += -ljpeg
 album:$(SRC)
 	$(CC) $^ -o $@ $(CPPFLAGS) $(LDFLAGS)
 
+debug:$(SRC)
+	$(CC) $^ -o $@ $(CPPFLAGS) $(LDFLAGS) -DDEBUG
+
 clean:
 	$(RM) album
 
