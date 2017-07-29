@@ -140,37 +140,86 @@ void display(filenode *jpg, lcd_info *lcdinfo)
 	assert(lcdinfo);
 	assert(lcdinfo->fbmem);
 
-#define RED   0
-#define GREEN 1
-#define BLUE  2
-
 	bzero(lcdinfo->fbmem, lcdinfo->xres * lcdinfo->yres * lcdinfo->bpp/8);
 
 	int xoffset = ((int)lcdinfo->xres - jpg->width ) / 2;
 	int yoffset = ((int)lcdinfo->yres - jpg->height) / 2;
 
-#ifdef DEBUG
-	printf("xoffset: %d\n", xoffset);
-	printf("yoffset: %d\n", yoffset);
-#endif
+	int ele  = MAX(lcdinfo->xres, lcdinfo->yres);
+	int step = 0;
 
-	xoffset = xoffset > 0 ? xoffset : 0;
-	yoffset = yoffset > 0 ? yoffset : 0;
+	if(xoffset < 0 || yoffset < 0)
+	{
+		float times = MAX( (float)jpg->width /lcdinfo->xres, 
+				   (float)jpg->height/lcdinfo->yres );
+
+		printf("times: %f\n", times);
+
+		if(times >= 2)
+		{
+			ele = 1;
+			step = times;
+			printf("1ele:  %d\n", ele);
+			printf("1step: %d\n", step);
+		}
+		else
+		{
+			step = 1;
+			ele = 1/(times-1);
+			printf("2ele:  %d\n", ele);
+			printf("2step: %d\n", step);
+		}
+
+		printf("%f\n", (float)jpg->width/(ele+step) * ele);
+		printf("%f\n", (float)jpg->height/(ele+step) * ele);
+
+		//if(xoffset < 0)
+			xoffset = ((float)lcdinfo->xres - (float)jpg->width /(ele + step) * ele) / 2;
+		//if(yoffset < 0)
+			yoffset = ((float)lcdinfo->yres - (float)jpg->height/(ele + step) * ele) / 2;
+
+		printf("xoffset:%d\n", xoffset);
+		printf("yoffset:%d\n", yoffset);
+	}
 
 	long pos = (lcdinfo->xres * yoffset + xoffset ) * lcdinfo->bpp /8;
 	char *FB = lcdinfo->fbmem + pos;
 
-	int row, column;
-	for(row=0; row<lcdinfo->yres-yoffset && row<jpg->height; row++)
+#define RED   0
+#define GREEN 1
+#define BLUE  2
+
+	long row, column;
+	long lcd_offset = 0;
+	long rgb_offset = 0;
+	long rgb_offset_row = 0;
+	long rgb_offset_col = 0;
+
+	long x, y;
+
+	for(row=0,x=0; row<lcdinfo->yres-yoffset && x<jpg->height; row++)
 	{
-		for(column=0; column<lcdinfo->xres-xoffset && column<jpg->width; column++)
+		rgb_offset_row = (jpg->width * x) * jpg->bpp/8;
+
+		for(column=0, y=0; column<lcdinfo->xres-xoffset && y<jpg->width; column++)
 		{
-			unsigned long lcd_offset = (lcdinfo->xres*row + column) * lcdinfo->bpp/8;
-			unsigned long rgb_offset = (jpg->width * row  + column) * jpg->bpp/8;
+			lcd_offset = (lcdinfo->xres*row + column) * lcdinfo->bpp/8;
+
+			rgb_offset_col = y * jpg->bpp/8;
+			rgb_offset     = rgb_offset_row + rgb_offset_col;
 
 			memcpy(FB+lcd_offset+lcdinfo->red_offset/8,  jpg->rgb+rgb_offset+RED,  1);
 			memcpy(FB+lcd_offset+lcdinfo->green_offset/8,jpg->rgb+rgb_offset+GREEN,1);
 			memcpy(FB+lcd_offset+lcdinfo->blue_offset/8, jpg->rgb+rgb_offset+BLUE, 1);
+
+			y++;
+
+			if(column != 0 && column % ele == 0)
+				y += step;
 		}
+
+		x++;
+		if(row != 0 && row % ele == 0)
+			x += step;
 	}
 }

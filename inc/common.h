@@ -55,4 +55,11 @@ typedef struct filenode
 #define PREV 1
 #define NEXT 2
 
+#define MAX(a, b) ({ \
+		typeof(a) _a = a; \
+		typeof(b) _b = b; \
+		(&_a == &_b); \
+		_a > _b ? _a : _b; \
+		})
+
 #endif
