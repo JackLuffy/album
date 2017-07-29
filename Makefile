@@ -21,7 +21,7 @@ debug:$(SRC)
 	$(CC) $^ -o $@ $(CPPFLAGS) $(LDFLAGS) -DDEBUG
 
 clean:
-	$(RM) album debuge
+	$(RM) album debug
 
 distclean:clean
 	$(RM) core .*.sw? src/*.o src/.*.sw?
