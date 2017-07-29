@@ -1,3 +1,19 @@
+//////////////////////////////////////////////////////////////////
+//
+//  Copyright(C), 2013-2017, GEC Tech. Co., Ltd.
+//
+//  File name: album/src/lcd.c
+//
+//  Author: Vincent Lin (林世霖)  微信公众号：秘籍酷
+//
+//  Date: 2017-7
+//  
+//  Description: LCD设备操作
+//
+//  GitHub: github.com/vincent040   Bug Report: 2437231462@qq.com
+//
+//////////////////////////////////////////////////////////////////
+
 #include "lcd.h"
 
 lcd_info *init_lcd(void)

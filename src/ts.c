@@ -1,3 +1,19 @@
+//////////////////////////////////////////////////////////////////
+//
+//  Copyright(C), 2013-2017, GEC Tech. Co., Ltd.
+//
+//  File name: album/src/ts.c
+//
+//  Author: Vincent Lin (林世霖)  微信公众号：秘籍酷
+//
+//  Date: 2017-7
+//  
+//  Description: 触摸屏设备的操作
+//
+//  GitHub: github.com/vincent040   Bug Report: 2437231462@qq.com
+//
+//////////////////////////////////////////////////////////////////
+
 #include "common.h"
 #include "ts.h"
 

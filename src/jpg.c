@@ -1,3 +1,19 @@
+//////////////////////////////////////////////////////////////////
+//
+//  Copyright(C), 2013-2017, GEC Tech. Co., Ltd.
+//
+//  File name: album/src/jpg.c
+//
+//  Author: Vincent Lin (林世霖)  微信公众号：秘籍酷
+//
+//  Date: 2017-7
+//  
+//  Description: 对jpg/jpeg图片的处理
+//
+//  GitHub: github.com/vincent040   Bug Report: 2437231462@qq.com
+//
+//////////////////////////////////////////////////////////////////
+
 #include "jpg.h"
 
 bool is_jpg(char *filename)
@@ -117,7 +133,7 @@ void decompress(filenode *jpg)
 }
 
 
-void display(filenode *jpg, lcd_info *lcdinfo, int xoffset, int yoffset)
+void display(filenode *jpg, lcd_info *lcdinfo)
 {
 	assert(jpg);
 	assert(jpg->rgb);
@@ -130,16 +146,27 @@ void display(filenode *jpg, lcd_info *lcdinfo, int xoffset, int yoffset)
 
 	bzero(lcdinfo->fbmem, lcdinfo->xres * lcdinfo->yres * lcdinfo->bpp/8);
 
+	int xoffset = ((int)lcdinfo->xres - jpg->width ) / 2;
+	int yoffset = ((int)lcdinfo->yres - jpg->height) / 2;
+
+#ifdef DEBUG
+	printf("xoffset: %d\n", xoffset);
+	printf("yoffset: %d\n", yoffset);
+#endif
+
+	xoffset = xoffset > 0 ? xoffset : 0;
+	yoffset = yoffset > 0 ? yoffset : 0;
+
 	long pos = (lcdinfo->xres * yoffset + xoffset ) * lcdinfo->bpp /8;
 	char *FB = lcdinfo->fbmem + pos;
 
-	int x, y;
-	for(x=0; x<lcdinfo->yres && x<jpg->height; x++)
+	int row, column;
+	for(row=0; row<lcdinfo->yres-yoffset && row<jpg->height; row++)
 	{
-		for(y=0; y<lcdinfo->xres && y<jpg->width; y++)
+		for(column=0; column<lcdinfo->xres-xoffset && column<jpg->width; column++)
 		{
-			unsigned long lcd_offset = (lcdinfo->xres*x + y) * lcdinfo->bpp/8;
-			unsigned long rgb_offset = (jpg->width * x  + y) * jpg->bpp/8;
+			unsigned long lcd_offset = (lcdinfo->xres*row + column) * lcdinfo->bpp/8;
+			unsigned long rgb_offset = (jpg->width * row  + column) * jpg->bpp/8;
 
 			memcpy(FB+lcd_offset+lcdinfo->red_offset/8,  jpg->rgb+rgb_offset+RED,  1);
 			memcpy(FB+lcd_offset+lcdinfo->green_offset/8,jpg->rgb+rgb_offset+GREEN,1);

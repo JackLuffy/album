@@ -1,3 +1,19 @@
+//////////////////////////////////////////////////////////////////
+//
+//  Copyright(C), 2013-2017, GEC Tech. Co., Ltd.
+//
+//  File name: album/album.c
+//
+//  Author: Vincent Lin (林世霖)  微信公众号：秘籍酷
+//
+//  Date: 2017-7
+//  
+//  Description: 一个简单的电子相册
+//
+//  GitHub: github.com/vincent040   Bug Report: 2437231462@qq.com
+//
+//////////////////////////////////////////////////////////////////
+
 #include "common.h"
 #include "ts.h"
 #include "lcd.h"
@@ -55,7 +71,7 @@ linklist show_jpg(linklist list, int action, lcd_info *lcdinfo)
 	filenode *jpg = &list->data;
 
 	decompress(jpg);
-	display(jpg, lcdinfo, 0, 0);
+	display(jpg, lcdinfo);
 
 	return list;
 }
@@ -170,7 +186,7 @@ int main(int argc, char **argv)
 		jpg->name = file;
 
 		decompress(jpg);
-		display(jpg, lcdinfo, 0, 0);
+		display(jpg, lcdinfo);
 	}
 	else if(S_ISDIR(finfo->st_mode))
 	{
