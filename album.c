@@ -22,8 +22,9 @@
 #define LIST_NODE_DATATYPE filenode
 #include "list.h"
 
-// global linklist 
+// global variables
 linklist g_head = NULL;
+int g_touch_count = 0;
 
 char *check_args(int argc, char **argv)
 {

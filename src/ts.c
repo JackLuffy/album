@@ -45,5 +45,6 @@ int wait4touch(int touch_panel)
 		}
 	}
 
+	g_touch_count++;
 	return x<400 ? PREV : NEXT;
 }

@@ -62,4 +62,8 @@ typedef struct filenode
 		_a > _b ? _a : _b; \
 		})
 
+
+// count the times touch-panel has been touched
+extern int g_touch_count;
+
 #endif

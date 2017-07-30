@@ -75,6 +75,10 @@ void decompress(filenode *jpg)
 {
 	assert(jpg);
 
+	// check this jpg has been decompressed already
+	if(jpg->rgb != NULL)
+		return;
+
 #ifdef DEBUG
 	fprintf(stderr, "decompressing %s ...\n", jpg->name);
 #endif
@@ -140,50 +144,56 @@ void display(filenode *jpg, lcd_info *lcdinfo)
 	assert(lcdinfo);
 	assert(lcdinfo->fbmem);
 
-	bzero(lcdinfo->fbmem, lcdinfo->xres * lcdinfo->yres * lcdinfo->bpp/8);
+	static int k = -1;
+	k = (k + 1) % 2; // k = 0,1,0,1,0,1 ...
 
-	int xoffset = ((int)lcdinfo->xres - jpg->width ) / 2;
-	int yoffset = ((int)lcdinfo->yres - jpg->height) / 2;
+#ifdef DEBUG
+	printf("k : %d\n", k);
+#endif
 
-	int ele  = MAX(lcdinfo->xres, lcdinfo->yres);
+	int row_size = lcdinfo->vinfo.xres * lcdinfo->vinfo.bits_per_pixel/8;
+	int frm_size = row_size * lcdinfo->vinfo.yres;
+
+	lcdinfo->vinfo.xoffset = 0;
+	lcdinfo->vinfo.yoffset = k * lcdinfo->vinfo.yres;
+	if(ioctl(lcdinfo->fd, FBIOPAN_DISPLAY, &lcdinfo->vinfo) == -1)
+	{
+		fprintf(stderr, "[%d] iotcl() failed: %s\n", __LINE__, strerror(errno));
+		return;
+	}
+
+	char *fbmem_tmp = lcdinfo->fbmem;
+	fbmem_tmp += ((k+1)%2) * frm_size; // fbmem_tmp pointing to the area which is not visible
+
+
+	int xoffset = ((int)lcdinfo->vinfo.xres - jpg->width ) / 2;
+	int yoffset = ((int)lcdinfo->vinfo.yres - jpg->height) / 2;
+
+	int ele  = MAX(lcdinfo->vinfo.xres, lcdinfo->vinfo.yres);
 	int step = 0;
 
 	if(xoffset < 0 || yoffset < 0)
 	{
-		float times = MAX( (float)jpg->width /lcdinfo->xres, 
-				   (float)jpg->height/lcdinfo->yres );
-
-		printf("times: %f\n", times);
+		float times = MAX( (float)jpg->width /lcdinfo->vinfo.xres, 
+				   (float)jpg->height/lcdinfo->vinfo.yres );
 
 		if(times >= 2)
 		{
 			ele = 1;
 			step = times;
-			printf("1ele:  %d\n", ele);
-			printf("1step: %d\n", step);
 		}
 		else
 		{
 			step = 1;
 			ele = 1/(times-1);
-			printf("2ele:  %d\n", ele);
-			printf("2step: %d\n", step);
 		}
 
-		printf("%f\n", (float)jpg->width/(ele+step) * ele);
-		printf("%f\n", (float)jpg->height/(ele+step) * ele);
-
-		//if(xoffset < 0)
-			xoffset = ((float)lcdinfo->xres - (float)jpg->width /(ele + step) * ele) / 2;
-		//if(yoffset < 0)
-			yoffset = ((float)lcdinfo->yres - (float)jpg->height/(ele + step) * ele) / 2;
-
-		printf("xoffset:%d\n", xoffset);
-		printf("yoffset:%d\n", yoffset);
+		xoffset = ((float)lcdinfo->vinfo.xres - (float)jpg->width /(ele + step) * ele) / 2;
+		yoffset = ((float)lcdinfo->vinfo.yres - (float)jpg->height/(ele + step) * ele) / 2;
 	}
 
-	long pos = (lcdinfo->xres * yoffset + xoffset ) * lcdinfo->bpp /8;
-	char *FB = lcdinfo->fbmem + pos;
+	long pos = (lcdinfo->vinfo.xres * yoffset + xoffset ) * lcdinfo->vinfo.bits_per_pixel/8;
+	fbmem_tmp += pos;
 
 #define RED   0
 #define GREEN 1
@@ -197,23 +207,22 @@ void display(filenode *jpg, lcd_info *lcdinfo)
 
 	long x, y;
 
-	for(row=0,x=0; row<lcdinfo->yres-yoffset && x<jpg->height; row++)
+	for(row=0,x=0; row<lcdinfo->vinfo.yres-yoffset && x<jpg->height; row++)
 	{
 		rgb_offset_row = (jpg->width * x) * jpg->bpp/8;
 
-		for(column=0, y=0; column<lcdinfo->xres-xoffset && y<jpg->width; column++)
+		for(column=0, y=0; column<lcdinfo->vinfo.xres-xoffset && y<jpg->width; column++)
 		{
-			lcd_offset = (lcdinfo->xres*row + column) * lcdinfo->bpp/8;
+			lcd_offset = (lcdinfo->vinfo.xres*row + column) * lcdinfo->vinfo.bits_per_pixel/8;
 
 			rgb_offset_col = y * jpg->bpp/8;
 			rgb_offset     = rgb_offset_row + rgb_offset_col;
 
-			memcpy(FB+lcd_offset+lcdinfo->red_offset/8,  jpg->rgb+rgb_offset+RED,  1);
-			memcpy(FB+lcd_offset+lcdinfo->green_offset/8,jpg->rgb+rgb_offset+GREEN,1);
-			memcpy(FB+lcd_offset+lcdinfo->blue_offset/8, jpg->rgb+rgb_offset+BLUE, 1);
+			memcpy(fbmem_tmp+lcd_offset+lcdinfo->vinfo.red.offset/8,  jpg->rgb+rgb_offset+RED,  1);
+			memcpy(fbmem_tmp+lcd_offset+lcdinfo->vinfo.green.offset/8,jpg->rgb+rgb_offset+GREEN,1);
+			memcpy(fbmem_tmp+lcd_offset+lcdinfo->vinfo.blue.offset/8, jpg->rgb+rgb_offset+BLUE, 1);
 
 			y++;
-
 			if(column != 0 && column % ele == 0)
 				y += step;
 		}
@@ -222,4 +231,16 @@ void display(filenode *jpg, lcd_info *lcdinfo)
 		if(row != 0 && row % ele == 0)
 			x += step;
 	}
+
+	lcdinfo->vinfo.xoffset = 0;
+	lcdinfo->vinfo.yoffset = ((k+1)%2) * lcdinfo->vinfo.yres;
+	if(ioctl(lcdinfo->fd, FBIOPAN_DISPLAY, &lcdinfo->vinfo) == -1)
+	{
+		fprintf(stderr, "[%d] iotcl() failed: %s\n", __LINE__, strerror(errno));
+		return;
+	}
+
+	// fbmem_tmp pointing the area which locates last frame
+	fbmem_tmp = lcdinfo->fbmem + k*frm_size;
+	bzero(fbmem_tmp, frm_size);
 }
