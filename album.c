@@ -23,7 +23,8 @@
 #include "list.h"
 
 // global variables
-linklist g_head = NULL;
+linklist  g_head    = NULL;
+lcd_info *g_lcdinfo = NULL; // for signal
 
 char *check_args(int argc, char **argv)
 {
@@ -203,12 +204,42 @@ struct stat *get_file_info(char *filename)
 	return &finfo;
 }
 
+void reset_lcd_then_quit(int sig)
+{
+	g_lcdinfo->vinfo.xoffset = 0;
+	g_lcdinfo->vinfo.yoffset = 0;
+
+	if(ioctl(g_lcdinfo->fd, FBIOPAN_DISPLAY, &g_lcdinfo->vinfo) == -1)
+	{
+		fprintf(stderr, "[%d] ioctl failed: %s\n", __LINE__, strerror(errno));
+		return;
+	}
+
+	int row_size = g_lcdinfo->vinfo.xres * g_lcdinfo->vinfo.bits_per_pixel/8;
+	int frm_size = g_lcdinfo->vinfo.yres * row_size;
+
+	if(munmap(g_lcdinfo->fbmem, 2 * frm_size) == -1)
+	{
+		fprintf(stderr, "[%d] munmap failed: %s\n", __LINE__, strerror(errno));
+		return;
+	}
+
+	close(g_lcdinfo->fd);
+	exit(0);
+}
+
 int main(int argc, char **argv)
 {
 	char *file = check_args(argc, argv);
 
+	// deal with ctl-c signal
+	signal(SIGINT, reset_lcd_then_quit);
+
 	// prepare LCD
 	lcd_info *lcdinfo = init_lcd();
+	g_lcdinfo = lcdinfo;
+
+	printf("fd: %d\n", g_lcdinfo->fd);
 
 	// get file's infomation
 	struct stat *finfo = get_file_info(file);
