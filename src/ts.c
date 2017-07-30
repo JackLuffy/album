@@ -38,13 +38,13 @@ int wait4touch(int touch_panel)
 		{
 			// release the TP
 			if(event.code  == BTN_TOUCH &&
-		   	   event.value == 0)
+		   	   event.value == 0 &&
+			   x != 0)
 			{
 				break;
 			}
 		}
 	}
 
-	g_touch_count++;
 	return x<400 ? PREV : NEXT;
 }

@@ -147,10 +147,6 @@ void display(filenode *jpg, lcd_info *lcdinfo)
 	static int k = -1;
 	k = (k + 1) % 2; // k = 0,1,0,1,0,1 ...
 
-#ifdef DEBUG
-	printf("k : %d\n", k);
-#endif
-
 	int row_size = lcdinfo->vinfo.xres * lcdinfo->vinfo.bits_per_pixel/8;
 	int frm_size = row_size * lcdinfo->vinfo.yres;
 

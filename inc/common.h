@@ -36,12 +36,14 @@
 typedef struct filenode
 {
 	char *name;
+	char *rgb; // RGB buffer
 
 	int width;
 	int height;
 	int bpp;
+	
+	int CBFB; // Count Backwards to Free RGB Buffer;
 
-	char *rgb;
 }filenode;
 
 #define LIST_NODE_DATATYPE filenode

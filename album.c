@@ -24,7 +24,6 @@
 
 // global variables
 linklist g_head = NULL;
-int g_touch_count = 0;
 
 char *check_args(int argc, char **argv)
 {
@@ -37,6 +36,32 @@ char *check_args(int argc, char **argv)
 	}
 
 	return argc==2 ? argv[1] : ".";
+}
+
+void refresh_list(linklist current_jpg)
+{
+	assert(current_jpg);
+
+	current_jpg->data.CBFB = 10;
+
+	linklist tmp;
+	for(tmp=g_head->next; tmp!=g_head; tmp=tmp->next)
+	{
+		if(tmp == current_jpg)
+			continue;
+
+		int count = tmp->data.CBFB - 1;
+		tmp->data.CBFB = count > 0 ? count : 0;
+
+		if(tmp->data.CBFB == 0 && tmp->data.rgb != NULL)
+		{
+#ifdef DEBUG
+			printf("freeing %s ...\n", tmp->data.name);
+#endif
+			free(tmp->data.rgb);
+			tmp->data.rgb = NULL;
+		}
+	}
 }
 
 linklist show_jpg(linklist list, int action, lcd_info *lcdinfo)
@@ -69,6 +94,9 @@ linklist show_jpg(linklist list, int action, lcd_info *lcdinfo)
 		break;
 	}
 
+	// check is there any rgb-buffer can be free
+	refresh_list(list);
+
 	filenode *jpg = &list->data;
 
 	decompress(jpg);
@@ -92,13 +120,17 @@ linklist newnode(char *jpgname)
 	filenode *tmp = &new->data;
 
 	tmp->name  = jpgname;
+	tmp->rgb   = NULL;
+
 	tmp->width = 0;
 	tmp->height= 0;
 	tmp->bpp   = 0;
-	tmp->rgb   = NULL;
+
+	tmp->CBFB = 0; // Count Backwards to Free RGB Buffer
 
 	return new;
 }
+
 
 void show_jpg_dir(char *dirname, lcd_info *lcdinfo)
 {
@@ -174,9 +206,6 @@ struct stat *get_file_info(char *filename)
 int main(int argc, char **argv)
 {
 	char *file = check_args(argc, argv);
-
-	printf("xxxxxx\n");
-	return 0;
 
 	// prepare LCD
 	lcd_info *lcdinfo = init_lcd();
