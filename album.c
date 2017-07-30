@@ -175,6 +175,9 @@ int main(int argc, char **argv)
 {
 	char *file = check_args(argc, argv);
 
+	printf("xxxxxx\n");
+	return 0;
+
 	// prepare LCD
 	lcd_info *lcdinfo = init_lcd();
 
