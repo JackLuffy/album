@@ -14,14 +14,14 @@ LDFLAGS += -L lib/
 LDFLAGS += -ljpeg
 
 
-debug:$(SRC)
-	$(CC) $^ -o $@ $(CPPFLAGS) $(LDFLAGS) -DDEBUG
-
-album:$(SRC)
+album.out:$(SRC)
 	$(CC) $^ -o $@ $(CPPFLAGS) $(LDFLAGS) -NDEBUG
 
+debug.out:$(SRC)
+	$(CC) $^ -o $@ $(CPPFLAGS) $(LDFLAGS) -DDEBUG
+
 clean:
-	$(RM) album debug
+	$(RM) *.out src/*.o
 
 distclean:clean
-	$(RM) core .*.sw? src/*.o src/.*.sw?
+	$(RM) core .*.sw? src/.*.sw?
