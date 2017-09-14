@@ -8,7 +8,7 @@
 
 ### 编程环境
 * Ubuntu16.04
-* [GEC6818开发板](https://item.taobao.com/item.htm?spm=a1z10.1-c.w5003-6427619857.1.45ee61bboSErWr&id=38029903389&scene=taobao_shop)
+* [GEC210开发板](https://item.taobao.com/item.htm?spm=a1z10.1-c.w5003-6427619857.1.45ee61bboSErWr&id=38029903389&scene=taobao_shop)
 
 ### 技术支持
 * <a href="https://weidian.com/?userid=260920190">![image](https://github.com/vincent040/lab/blob/master/res/weidian.jpg?raw=true)
